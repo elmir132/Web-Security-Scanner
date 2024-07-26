@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Web Security Scanner</title>
+	<style>
+		body {
+			font-family: 'Arial', sans-serif;
+			background-color: #f8f8f8;
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		.container {
+			max-width: 800px;
+			margin: 20px auto;
+			background-color: #fff;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		}
+
+		h1 {
+			text-align: center;
+			color: #333;
+		}
+
+		label {
+			display: block;
+			margin-bottom: 10px;
+			font-size: 16px;
+		}
+
+		input {
+			width: 100%;
+			padding: 10px;
+			margin-bottom: 20px;
+			font-size: 16px;
+		}
+
+		button {
+			background-color: #3498db;
+			color: #fff;
+			padding: 10px 20px;
+			font-size: 18px;
+			cursor: pointer;
+			border: none;
+			border-radius: 4px;
+		}
+
+		button:hover {
+			background-color: #2980b9;
+		}
+
+		#results {
+			margin-top: 20px;
+		}
+
+		ul {
+			list-style: none;
+			padding: 0;
+		}
+
+		li {
+			background-color: #ecf0f1;
+			margin: 5px 0;
+			padding: 10px;
+			border-radius: 4px;
+		}
+
+		p {
+			font-size: 18px;
+		}
+
+
+		/* SCANNER RESULTS*/
+		.low {
+			background-color: lightgreen;
+		}
+
+		.medium {
+			background-color: orange;
+		}
+
+		.high {
+			background-color: red;
+		}
+
+
+
+		/*LOADER*/
+
+		#loader {
+			display: none;
+			border: 6px solid #f3f3f3;
+			border-top: 6px solid #3498db;
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			animation: spin 1s linear infinite;
+			margin: 20px auto;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+
+
+
+
+	</style>
+</head>
+<body>
+	
+	<div class="container">
+		<h1>Web Security Scanner</h1>
+		<label>Enter URL to scan:</label>
+		<input id="urlInput" placeholder="URL..." required>
+		<button onclick="performScan()">Scan</button>
+		<div id="results"></div>
+		<div id="loader"></div>
+		<div id="footer" class="footer">
+    <p>Security Suggestions:</p>
+    <ul id="suggestions"></ul>
+	</div>
+
+
+	<script>
+		function isValidUrl(url) {
+			try {
+				new URL(url);
+				return true;
+			} catch (_) {
+				return false;  
+			}
+		}
+ async function getSecuritySuggestion(alert) {
+      const prompt = `Provide security suggestion for ${alert.name} risk`;
+      const response = await fetch('/generate-suggestion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt }),
+      });
+
+      const suggestion = await response.json();
+      return suggestion.text || 'No specific suggestion available.';
+    }
+		 
+
+
+		 async function performScan() {
+  const url = document.getElementById('urlInput').value;
+  console.log('URL:', url); // Log the URL
+
+  if (!isValidUrl(url)) {
+    alert('Please enter a valid URL');
+    return;
+  }
+
+  // Clear existing results and suggestions
+  clearResults();
+  clearSuggestions();
+
+  // Show loader while scanning
+  const loader = document.getElementById('loader');
+  loader.style.display = 'block';
+
+  try {
+    const response = await fetch('/scan', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: url }), // Send the URL as a JSON object
+    });
+
+    console.log('Response:', response);  // Log the response
+    const result = await response.json();
+    console.log('Result:', result);  // Log the result
+
+    if (result && result.severity) {
+      displayResults(result);
+
+      // Generate suggestions for each structured alert
+
+	const suggestions = result.structured_alerts.map(alert => getSecuritySuggestion(alert));
+
+      // Now suggestions is an array of promises
+      updateSuggestions(suggestions);
+    } else {
+      displayNoResults();
+    }
+  } catch (error) {
+    console.error('Error:', error);  // Log the error
+    displayError();
+  } finally {
+    // Hide loader after scanning is complete
+    loader.style.display = 'none';
+  }
+}
+
+
+async function updateSuggestions(suggestions) {
+    const suggestionsContainer = document.getElementById('suggestions');
+    suggestionsContainer.innerHTML = ''; // Clear previous suggestions
+
+    const ul = document.createElement('ul');
+
+    // Use Promise.all to wait for all promises to resolve
+    await Promise.all(suggestions.map(async (promise) => {
+        const suggestion = await promise;
+
+        const li = document.createElement('li');
+        li.textContent = suggestion;
+        ul.appendChild(li);
+    }));
+
+    suggestionsContainer.appendChild(ul);
+}
+
+
+
+function clearSuggestions() {
+  const suggestionsContainer = document.getElementById('suggestions');
+  suggestionsContainer.innerHTML = '';
+}
+
+  function clearResults() {
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = '';
+  }
+
+
+function displayResults(result) {
+	const resultsContainer = document.getElementById('results');
+	resultsContainer.innerHTML = '';
+
+	const pSeverity = document.createElement('p');
+	pSeverity.textContent = `Severity: ${result.severity}`;
+	resultsContainer.appendChild(pSeverity);
+
+	const pMessage = document.createElement('p');
+	pMessage.textContent = result.message;
+	resultsContainer.appendChild(pMessage);
+
+    // Check if the result contains structured_alerts
+    if (result.structured_alerts && result.structured_alerts.length > 0) {
+    	const ul = document.createElement('ul');
+
+        // Loop over the structured_alerts array
+        for (let i = 0; i < result.structured_alerts.length; i++) {
+        	const alert = result.structured_alerts[i];
+
+            // Create a new list item for each alert
+            const li = document.createElement('li');
+            li.textContent = `ZAP Alert - Name: ${alert.name}, Risk: ${alert.risk}, Description: ${alert.description}`;
+
+            // Add a class to the list item based on the risk level
+            li.className = alert.risk.toLowerCase();
+
+            // Append the list item to the unordered list
+            ul.appendChild(li);
+        }
+
+        // Append the unordered list to the results container
+        resultsContainer.appendChild(ul);
+    }
+}
+
+
+function displayNoResults() {
+	const resultsContainer = document.getElementById('results');
+	resultsContainer.innerHTML = '';
+
+	const p = document.createElement('p');
+	p.textContent = 'No vulnerabilities found.';
+	resultsContainer.appendChild(p);
+}
+
+function displayError() {
+	const resultsContainer = document.getElementById('results');
+	resultsContainer.innerHTML = '';
+
+	const p = document.createElement('p');
+	p.textContent = 'An error occurred while scanning the URL.';
+	resultsContainer.appendChild(p);
+}
+</script>
+</body>
+</html>

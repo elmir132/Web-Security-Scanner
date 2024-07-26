@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Security Scanner</title>
+  <!-- Example: Update the paths if needed -->
+  <link rel="stylesheet" href="/styles.css">
+
+
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Web Security Scanner</h1>
+    <label>Enter URL to scan:</label>
+    <input v-model="url" placeholder="URL..." required>
+    <button @click="performScan">Scan</button>
+    <div id="results">
+      <ul v-if="results.length > 0">
+        <li v-for="(result, index) in results" :key="index">
+          {{ result }}
+        </li>
+      </ul>
+      <p v-else>No results found.</p>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
