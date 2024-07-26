@@ -7,12 +7,12 @@ import shodan
 import zapv2
 from openai import OpenAI
 
-client = OpenAI(api_key="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") 
+client = OpenAI(api_key="here api") 
 
 
 app = Flask(__name__)
 # Set up the Shodan API key (you can get a free API key from https://account.shodan.io/register/api)
-SHODAN_API_KEY = "gr3Rfv9PXJSJU5cZBT5XlAGP9Y06heLX"
+SHODAN_API_KEY = "here api"
 api = shodan.Shodan(SHODAN_API_KEY)
 
   # Replace with your actual OpenAI API key
