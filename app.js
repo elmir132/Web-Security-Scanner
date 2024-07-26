@@ -7,7 +7,7 @@ import shodan
 
 app = Flask(__name__)
 # Set up the Shodan API key (you can get a free API key from https://account.shodan.io/register/api)
-SHODAN_API_KEY = "nJtpJv1y8LWtkZY8TKdF6zoubMnjVqDM"
+SHODAN_API_KEY = "here api"
 api = shodan.Shodan(SHODAN_API_KEY)
 
 def analyze_page_content(content):
